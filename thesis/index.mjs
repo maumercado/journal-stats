@@ -81,38 +81,33 @@ const consolidateTrades = (records) => {
 };
 
 // Main function
-const processTrades = (filePath) => {
-  return new Promise((resolve, reject) => {
-    const parser = fs.createReadStream(filePath).pipe(parse({
-      columns: true,
-      delimiter: '\t',
-      relax_column_count: true
-    }));
+export const processTrades = async (filePath) => {
+  const parser = fs.createReadStream(filePath).pipe(parse({
+    columns: true,
+    delimiter: '\t',
+    relax_column_count: true
+  }));
 
-    const records = [];
-    parser.on('readable', () => {
-      let record;
-      while (record = parser.read()) {
-        records.push(record);
-      }
-    });
+  let records = [];
+  for await (const record of parser) {
+    records.push(record);
+  }
 
-    parser.on('end', () => {
-      resolve(consolidateTrades(records));
-    });
-
-    parser.on('error', (error) => {
-      reject(error);
-    });
-  });
+  return consolidateTrades(records);
 };
+
 
 // Usage
 const filePath = new URL('../data/demo.tsv', import.meta.url);
 const absolutePath = fileURLToPath(filePath);
 
-processTrades(absolutePath).then(consolidatedTrades => {
-  console.log(JSON.stringify(consolidatedTrades, null, 2));
-}).catch(error => {
-  console.error(error);
-});
+async function main() {
+  try {
+    const consolidatedTrades = await processTrades(absolutePath);
+    console.log(JSON.stringify(consolidatedTrades, null, 2));
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+main();
