@@ -11,6 +11,14 @@ const parseMaxOpenQuantity = (row) => parseInt(row['Max Open Quantity'], 10)
 const pnl = (row) => parseFloat(row['Profit/Loss (P)'])
 const parseTime = (dateTime) => new Date(dateTime.replace('  ', 'T').replace(/ EP|BP/, '').trim())
 
+// returns time difference in seconds
+const parseDuration = (row) => {
+  const entryDateTime = parseTime(row['Entry DateTime'])
+  const exitDateTime = parseTime(row['Exit DateTime'])
+
+  return (exitDateTime.getTime() - entryDateTime.getTime()) / 1000
+}
+
 // Trade functions
 const createTrade = (row) => ({
   tradeId: randomUUID(),
@@ -47,6 +55,7 @@ const closeTrade = (trade, row) => {
   trade.exitDateTime = parseTime(row['Exit DateTime'])
   trade.exitPrice = parseExitPrice(row)
   trade.tradeQuantity += parseTradeQuantity(row)
+  trade.duration = parseDuration(row)
   trade.steps.push({
     dateTime: parseTime(row['Exit DateTime']),
     price: parseExitPrice(row),
