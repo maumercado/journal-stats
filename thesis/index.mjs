@@ -98,45 +98,6 @@ const consolidateTrades = (records) => {
   return consolidatedTrades
 }
 
-// returns an object with hour and minute of the best pnl window
-const calculateMaxPnlWindow = (trades) => {
-  const windows = {}
-  let maxPnl = -Infinity
-  let maxPnlWindow = null
-
-  for (const trade of trades) {
-    const entryHour = trade.entryDateTime.getHours()
-    const entryMinute = trade.entryDateTime.getMinutes()
-    const exitHour = trade.exitDateTime.getHours()
-    const exitMinute = trade.exitDateTime.getMinutes()
-    const startWindow = Math.max(0, Math.floor((entryHour - 9) * 2 + entryMinute / 30))
-    const endWindow = Math.min(14, Math.floor((exitHour - 9) * 2 + exitMinute / 30))
-
-    for (let i = startWindow; i <= endWindow; i++) {
-      if (!windows[i]) {
-        windows[i] = []
-      }
-      windows[i].push(trade)
-    }
-  }
-
-  let letter = 'A'
-  for (const window in windows) {
-    const pnl = windows[window].reduce((acc, trade) => acc + trade.pnl, 0)
-    if (pnl > maxPnl) {
-      maxPnl = pnl
-      maxPnlWindow = {window, pnl, letter}
-    }
-    letter = String.fromCharCode(letter.charCodeAt(0) + 1)
-
-  }
-
-  const bestWindowHour = Math.floor(maxPnlWindow.window/ 2) + 9
-  const bestWindowMinute = (maxPnlWindow.window % 2) * 30
-
-  return { hour: bestWindowHour, minute: bestWindowMinute, period: maxPnlWindow.letter, pnl: maxPnlWindow.pnl }
-}
-
 // returns an array of objects with hour, minute and pnl sorted by pnl
 const calculatePnlWindows = (trades) => {
   const windows = {}
