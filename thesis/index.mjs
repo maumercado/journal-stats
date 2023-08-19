@@ -98,6 +98,8 @@ const consolidateTrades = (records) => {
   return consolidatedTrades
 }
 
+
+// TODO: Refactor this function, not working as expected.
 // returns an array of objects with hour, minute and pnl sorted by pnl
 const calculatePnlWindows = (trades) => {
   const windows = {}
