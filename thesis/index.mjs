@@ -32,6 +32,7 @@ const createTrade = (row) => ({
   exitDateTime: null,
   exitPrice: null,
   maxOpenQuantity: parseMaxOpenQuantity(row),
+  account: row.Account || 'default',
   steps: [] // To store the additions or partial exits
 })
 
