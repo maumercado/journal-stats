@@ -77,11 +77,15 @@ const consolidateTrades = (records) => {
         consolidatedTrades.push(currentTrade)
       }
       currentTrade = createTrade(row)
-    } else if (row['Exit DateTime'].includes('EP')) {
+    }
+
+    if (row['Exit DateTime'].includes('EP')) {
       currentTrade = closeTrade(currentTrade, row)
       consolidatedTrades.push(currentTrade)
       currentTrade = null
-    } else if (currentTrade) {
+    }
+
+    if (currentTrade) {
       currentTrade = updateTrade(currentTrade, row)
     }
   }
@@ -91,6 +95,41 @@ const consolidateTrades = (records) => {
   }
 
   return consolidatedTrades
+}
+
+const calculateMaxPnlWindow = (trades) => {
+  const windows = {}
+  let maxPnl = -Infinity
+  let maxPnlWindow = null
+
+  for (const trade of trades) {
+    const entryHour = trade.entryDateTime.getHours()
+    const entryMinute = trade.entryDateTime.getMinutes()
+    const exitHour = trade.exitDateTime.getHours()
+    const exitMinute = trade.exitDateTime.getMinutes()
+    const startWindow = Math.max(0, Math.floor((entryHour - 9) * 2 + entryMinute / 30))
+    const endWindow = Math.min(14, Math.floor((exitHour - 9) * 2 + exitMinute / 30))
+
+    for (let i = startWindow; i <= endWindow; i++) {
+      if (!windows[i]) {
+        windows[i] = []
+      }
+      windows[i].push(trade)
+    }
+  }
+
+  for (const window in windows) {
+    const pnl = windows[window].reduce((acc, trade) => acc + trade.pnl, 0)
+    if (pnl > maxPnl) {
+      maxPnl = pnl
+      maxPnlWindow = window
+    }
+  }
+
+  const bestWindowHour = Math.floor(maxPnlWindow / 2) + 9
+  const bestWindowMinute = (maxPnlWindow % 2) * 30
+
+  return { hour: bestWindowHour, minute: bestWindowMinute }
 }
 
 // Main function
@@ -117,6 +156,8 @@ async function main () {
   try {
     const consolidatedTrades = await processTrades(absolutePath)
     console.log(JSON.stringify(consolidatedTrades, null, 2))
+    calculateMaxPnlWindow(consolidatedTrades)
+    console.log(calculateMaxPnlWindow(consolidatedTrades))
   } catch (error) {
     console.error(error)
   }
