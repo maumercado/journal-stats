@@ -1,9 +1,9 @@
 import fp from 'fastify-plugin'
 
-export default async function healtzh(fastify) {
-  fastify.get('/', async (request) => {
+export default async function healthz(fastify) {
+  fastify.get('/', async () => {
     return { status: 'ok' }
   })
 }
 
-fp(productRoutes, { dependencies: ['productService'] })
+fp(healthz, { dependencies: [] })

@@ -1,5 +1,5 @@
-import fp from 'fastify-plugin'
 import pg from '@fastify/postgres'
+import fp from 'fastify-plugin'
 
 async function pgConfig(fastify) {
   const {

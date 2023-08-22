@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import fp from 'fastify-plugin'
 import Env from '@fastify/env'
 
@@ -36,7 +37,18 @@ async function Config(app) {
     }
   }
 
-  app.register(Env, { schema })
+  const filePath = new URL('../config/.env', import.meta.url)
+  const absolutePath = fileURLToPath(filePath)
+  const configOptions = {
+    config: "config",
+    dotenv: {
+      path: absolutePath
+    },
+    schema,
+    removeAdditional: true
+  }
+
+  return Env(app, configOptions)
 }
 
 export default fp(Config, { name: 'env' })
