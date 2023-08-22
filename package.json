@@ -5,17 +5,27 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "tap -r classic ./**/*.test.mjs",
-    "lint": "standard"
+    "test": "tap -r classic ./**/*.test.js",
+    "lint": "standard | snazzy",
+    "lint:fix": "standard --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "csv-parse": "^5.4.0"
+    "@fastify/autoload": "^5.7.1",
+    "@fastify/env": "^4.2.0",
+    "@fastify/postgres": "^5.2.0",
+    "@fastify/sensible": "^5.2.0",
+    "csv-parse": "^5.4.0",
+    "fastify": "^4.21.0",
+    "fastify-plugin": "^4.5.1",
+    "pg": "^8.11.3",
+    "postgrator": "^7.2.0"
   },
   "devDependencies": {
+    "snazzy": "^9.0.0",
     "standard": "^17.1.0",
-    "tap": "^16.3.7"
+    "tap": "^16.3.8"
   }
 }
