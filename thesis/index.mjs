@@ -8,6 +8,7 @@ const parseTradeQuantity = (row) => parseInt(row['Trade Quantity'], 10)
 const parseEntryPrice = (row) => parseFloat(row['Entry Price'])
 const parseExitPrice = (row) => parseFloat(row['Exit Price'])
 const parseMaxOpenQuantity = (row) => parseInt(row['Max Open Quantity'], 10)
+const parseMaxClosedQuantity = (row) => parseInt(row['Max Closed Quantity'], 10)
 const pnl = (row) => parseFloat(row['Profit/Loss (P)'])
 const parseTime = (dateTime) => new Date(dateTime.replace('  ', 'T').replace(/ EP|BP/, '').trim())
 
@@ -40,8 +41,6 @@ const updateTrade = (trade, row) => {
   const newMaxOpenQuantity = parseMaxOpenQuantity(row)
   const action = newMaxOpenQuantity > trade.maxOpenQuantity ? 'Added to Trade' : 'Took Profits'
 
-  trade.tradeQuantity += parseTradeQuantity(row)
-  trade.maxOpenQuantity = newMaxOpenQuantity
   trade.steps.push({
     dateTime: parseTime(row['Exit DateTime']),
     price: parseExitPrice(row),
@@ -55,7 +54,7 @@ const updateTrade = (trade, row) => {
 const closeTrade = (trade, row) => {
   trade.exitDateTime = parseTime(row['Exit DateTime'])
   trade.exitPrice = parseExitPrice(row)
-  trade.tradeQuantity += parseTradeQuantity(row)
+  trade.tradeQuantity = parseMaxClosedQuantity(row)
   trade.duration = parseDuration(row)
   trade.steps.push({
     dateTime: parseTime(row['Exit DateTime']),
@@ -68,7 +67,7 @@ const closeTrade = (trade, row) => {
 }
 
 // Consolidation function
-const consolidateTrades = (records) => {
+export const consolidateTrades = (records) => {
   let currentTrade = null
   const consolidatedTrades = []
 
@@ -98,39 +97,39 @@ const consolidateTrades = (records) => {
   return consolidatedTrades
 }
 
-
-// TODO: Refactor this function, not working as expected.
-// returns an array of objects with hour, minute and pnl sorted by pnl
-const calculatePnlWindows = (trades) => {
-  const windows = {}
-  const results = []
-
+export function calculatePnlWindows (trades) {
+  const windows = []
   for (const trade of trades) {
-    const entryHour = trade.entryDateTime.getHours()
-    const entryMinute = trade.entryDateTime.getMinutes()
-    const exitHour = trade.exitDateTime.getHours()
-    const exitMinute = trade.exitDateTime.getMinutes()
-    const startWindow = Math.max(0, Math.floor((entryHour - 9) * 2 + entryMinute / 30))
-    const endWindow = Math.min(14, Math.floor((exitHour - 9) * 2 + exitMinute / 30))
-
-    for (let i = startWindow; i <= endWindow; i++) {
-      if (!windows[i]) {
-        windows[i] = []
+    const { entryDateTime, pnl } = trade
+    const entryHour = entryDateTime.getHours()
+    const entryMinute = entryDateTime.getMinutes()
+    const windowIndex = Math.floor((entryHour - 9) * 2 + entryMinute / 30)
+    if (windowIndex >= 0 && windowIndex <= 29) {
+      if (!windows[windowIndex]) {
+        windows[windowIndex] = []
       }
-      windows[i].push(trade)
+      windows[windowIndex].push({ pnl })
     }
   }
-
-  let letter = 'A'
-  for (const window in windows) {
-    const pnl = windows[window].reduce((acc, trade) => acc + trade.pnl, 0)
-    const hour = Math.floor(window / 2) + 9
-    const minute = (window % 2) * 30
-    results.push({ hour, minute, pnl, letter })
-    letter = String.fromCharCode(letter.charCodeAt(0) + 1)
+  const results = []
+  const letter = 'A'.charCodeAt(0)
+  for (let i = 0; i < 30; i++) {
+    const window = windows[i] || []
+    const pnl = window.reduce((acc, trade) => acc + trade.pnl, 0)
+    const hour = Math.floor(i / 2) + 9
+    const minute = (i % 2) * 30
+    if (hour >= 9 && hour < 16 && pnl !== 0) {
+      const letterIndex = i - 1
+      const periodLetter = letterIndex >= 0 && letterIndex < 13 ? String.fromCharCode(letter + letterIndex) : ''
+      if (hour === 9 && minute < 30) {
+        results.push({ hour, minute, pnl, periodLetter: '' })
+      } else {
+        results.push({ hour, minute, pnl, periodLetter })
+      }
+    }
   }
-
-  return results.sort((a, b) => b.pnl - a.pnl)
+  results.sort((a, b) => b.pnl - a.pnl)
+  return results
 }
 
 // Main function
@@ -149,6 +148,32 @@ export const processTrades = async (filePath) => {
   return consolidateTrades(records)
 }
 
+export function calculateWinLossRatio (trades) {
+  let numWinningTrades = 0
+  for (const trade of trades) {
+    if (trade.pnl > 0) {
+      numWinningTrades++
+    }
+  }
+
+  if (numWinningTrades - trades.length === 0) {
+    return 1
+  } else {
+    return parseFloat(numWinningTrades / trades.length).toFixed(3)
+  }
+}
+
+export function calculatePnl (trades) {
+  let pnl = 0
+  for (const trade of trades) {
+    const entryValue = trade.entryPrice * trade.quantity
+    const exitValue = trade.exitPrice * trade.quantity
+    const tradePnl = (exitValue - entryValue) * (trade.quantity > 0 ? 1 : -1)
+    pnl += tradePnl
+  }
+  return pnl
+}
+
 // Usage
 const filePath = new URL('../data/demo.tsv', import.meta.url)
 const absolutePath = fileURLToPath(filePath)
@@ -156,8 +181,8 @@ const absolutePath = fileURLToPath(filePath)
 async function main () {
   try {
     const consolidatedTrades = await processTrades(absolutePath)
-    console.log(calculateMaxPnlWindow(consolidatedTrades))
     console.log(calculatePnlWindows(consolidatedTrades))
+    console.log(calculateWinLossRatio(consolidatedTrades))
   } catch (error) {
     console.error(error)
   }
