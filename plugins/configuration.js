@@ -48,7 +48,7 @@ async function Config(app) {
     removeAdditional: true
   }
 
-  return Env(app, configOptions)
+  app.register(Env, configOptions)
 }
 
 export default fp(Config, { name: 'env' })

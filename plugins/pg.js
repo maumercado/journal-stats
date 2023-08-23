@@ -1,14 +1,14 @@
 import pg from '@fastify/postgres'
 import fp from 'fastify-plugin'
 
-async function pgConfig(fastify) {
+async function pgConfig(app) {
   const {
     PGDATABASE: database,
     PGPORT: port,
     PGUSER: user,
     PGHOST: host,
     PGPASSWORD: password
-  } = fastify.config
+  } = app.config
 
   const config = {
     host,
@@ -18,7 +18,7 @@ async function pgConfig(fastify) {
     password
   }
 
-  fastify.register(pg, config)
+  app.register(pg, config)
 }
 
 export default fp(pgConfig, { name: 'pg', dependencies: ['env'] })

@@ -3,7 +3,6 @@ import AutoLoad from '@fastify/autoload'
 import sensible from '@fastify/sensible'
 import path from 'path'
 import { fileURLToPath } from 'url'
-
 const PORT = process.env.PORT || 3000
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -30,7 +29,7 @@ async function startServer(opts) {
 
 startServer()
   .then((server) => {
-    return server.listen(PORT)
+    return server.listen({port: PORT})
   })
   .catch((err) => {
     console.error(err)
