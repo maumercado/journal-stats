@@ -181,6 +181,7 @@ const absolutePath = fileURLToPath(filePath)
 async function main () {
   try {
     const consolidatedTrades = await processTrades(absolutePath)
+    console.log(consolidatedTrades.at(-1))
     console.log(calculatePnlWindows(consolidatedTrades))
     console.log(calculateWinLossRatio(consolidatedTrades))
   } catch (error) {

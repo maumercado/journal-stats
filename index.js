@@ -1,13 +1,19 @@
 import Fastify from 'fastify'
 import AutoLoad from '@fastify/autoload'
+import fastifyJwt from '@fastify/jwt'
 import sensible from '@fastify/sensible'
 import path from 'path'
+import fastifyVaultSecrets from '@maumercado/fastify-vault-secrets'
 import { fileURLToPath } from 'url'
 const PORT = process.env.PORT || 3000
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 async function startServer(opts) {
   const fastify = Fastify({ logger: true })
+
+  fastify.register(fastifyVaultSecrets('fastify-vault'), {
+    path: './config/'
+  })
 
   fastify.register(sensible)
 
