@@ -1,5 +1,6 @@
 import Fastify from 'fastify'
 import AutoLoad from '@fastify/autoload'
+import fastifyJwt from '@fastify/jwt'
 import sensible from '@fastify/sensible'
 import path from 'path'
 import fastifyVaultSecrets from '@maumercado/fastify-vault-secrets'

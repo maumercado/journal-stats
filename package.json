@@ -15,9 +15,11 @@
   "dependencies": {
     "@fastify/autoload": "^5.7.1",
     "@fastify/env": "^4.2.0",
+    "@fastify/jwt": "^7.2.0",
     "@fastify/postgres": "^5.2.0",
     "@fastify/sensible": "^5.2.0",
     "@maumercado/fastify-vault-secrets": "^1.0.0",
+    "bcrypt": "^5.1.1",
     "csv-parse": "^5.4.0",
     "fastify": "^4.21.0",
     "fastify-plugin": "^4.5.1",
