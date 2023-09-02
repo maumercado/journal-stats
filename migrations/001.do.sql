@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "profile" (
 );
 
 CREATE TYPE tradeType AS ENUM ('Long', 'Short');
-CREATE TYPE status AS ENUM ('Win', 'Lose');
+CREATE TYPE tradeStatus AS ENUM ('Win', 'Lose');
 
 CREATE TABLE IF NOT EXISTS trades (
   id uuid DEFAULT uuid_generate_v4 (),
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS trades (
   entryPrice float NOT NULL,
   tradeQuantity int NOT NULL,
   pnl float NOT NULL,
-  status status NOT NULL,
+  tradeStatus tradeStatus NOT NULL,
   exitDateTime DATE NOT NULL,
   exitPrice float NOT NULL,
   maxOpenQuantity int NOT NULL,

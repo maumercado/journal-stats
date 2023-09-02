@@ -1,7 +1,7 @@
 import Fastify from 'fastify'
 import AutoLoad from '@fastify/autoload'
-import fastifyJwt from '@fastify/jwt'
 import sensible from '@fastify/sensible'
+import fastifyMultiPart from '@fastify/multipart'
 import path from 'path'
 import fastifyVaultSecrets from '@maumercado/fastify-vault-secrets'
 import { fileURLToPath } from 'url'
@@ -15,6 +15,7 @@ async function startServer(opts) {
     path: './config/'
   })
 
+  fastify.register(fastifyMultiPart)
   fastify.register(sensible)
 
   fastify.register(AutoLoad, {
@@ -35,6 +36,7 @@ async function startServer(opts) {
 
 startServer()
   .then((server) => {
+    console.log(server.printRoutes())
     return server.listen({port: PORT})
   })
   .catch((err) => {

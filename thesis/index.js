@@ -163,17 +163,6 @@ export function calculateWinLossRatio (trades) {
   }
 }
 
-export function calculatePnl (trades) {
-  let pnl = 0
-  for (const trade of trades) {
-    const entryValue = trade.entryPrice * trade.quantity
-    const exitValue = trade.exitPrice * trade.quantity
-    const tradePnl = (exitValue - entryValue) * (trade.quantity > 0 ? 1 : -1)
-    pnl += tradePnl
-  }
-  return pnl
-}
-
 // Usage
 const filePath = new URL('../data/demo.tsv', import.meta.url)
 const absolutePath = fileURLToPath(filePath)

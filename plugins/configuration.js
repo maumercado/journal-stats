@@ -29,6 +29,9 @@ async function Config(app) {
       PGPASSWORD: {
         type: 'string'
       },
+      JWT_SECRET: {
+        type: 'string'
+      },
       NODE_ENV: {
         type: 'string',
         default: 'development'

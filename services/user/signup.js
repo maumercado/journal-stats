@@ -1,14 +1,4 @@
-import bcrypt from 'bcrypt';
 import fp from 'fastify-plugin';
-
-const SALTS = 10;
-
-async function generateHashPassword (password) {
-  const saltRounds = SALTS;
-  const hashedPassword = await bcrypt.hash(password, saltRounds);
-  return hashedPassword;
-};
-
 
 export default async function userSignup (fastify) {
 
@@ -16,8 +6,7 @@ export default async function userSignup (fastify) {
     const { email, firstName, lastName, password } = request.body;
 
     // Check if email already exists in database
-    const checkUserExistQuery = 'SELECT email FROM users WHERE email=$1';
-    const result = await fastify.pg.query(checkUserExistQuery, [email]);
+    const result = await fastify.userMethods.getUserByEmail(email);
 
     if (result.rowCount > 0) {
       return reply
@@ -27,15 +16,15 @@ export default async function userSignup (fastify) {
 
     // If email doesn't exist, create a new user
     try {
-      const hashedPassword = await generateHashedPassword(password);
-      const insertUserQuery = 'INSERT INTO profile (email, firstName, lastName, password) VALUES ($1, $2, $3, $4)';
-      await fastify.pg.query(insertUserQuery, [email, firstName, lastName, hashedPassword]);
-      const token = fastify.jwt.sign({ email, firstName, lastName });
+      const hashedPassword = await fastify.userMethods.generateHashPassword(password);
+      const token = await fastify.userMethods.createUser(email, firstName, lastName, hashedPassword);
+      await fastify.userMethods.createUserSession(user.id, token);
 
       return reply
         .code(201)
         .send({ success: true, message: 'User created successfully.', token });
     } catch (err) {
+      request.log.error(err, 'Error creating user.');
       return reply
         .code(500)
         .send({ success: false, message: 'An error occurred while creating the user.' });
