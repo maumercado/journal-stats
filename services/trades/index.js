@@ -2,7 +2,8 @@ import fp from 'fastify-plugin'
 import fs from 'node:fs/promises'
 
 export default fp(async (fastify) => {
-  fastify.post('/trades/upload-trades', async (request, reply) => {
+  fastify.post('/trades/upload-trades', { onRequest: [ fastify.authenticate ] }, async (request, reply) => {
+    if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
     const parts = request.parts()
     let part
     let filePath
@@ -17,7 +18,7 @@ export default fp(async (fastify) => {
     }
 
     try {
-      const trades = await fastify.tradeMethods.processTrades(filePath, request.user)
+      const trades = await fastify.tradeMethods.processAndInsertTrades(filePath, request.user)
       reply.send(trades)
     } catch (error) {
       reply.status(401).send({ error: error.message })

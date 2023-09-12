@@ -58,11 +58,6 @@ test('calculateWinLossRatio', (t) => {
 })
 
 test('consolidateTrades', (t) => {
-  // Note: the input records should look like those in the demo.tsv file
-  // like this:
-  // Symbol	Trade Type	Entry DateTime	Exit DateTime	Entry Price	Exit Price	Trade Quantity	Max Open Quantity	Max Closed Quantity	Profit/Loss (P)	Cumulative Profit/Loss (P)	FlatToFlat Profit/Loss (P)	FlatToFlat Max Open Profit (P)	FlatToFlat Max Open Loss (P)	Max Open Profit (P)	Max Open Loss (P)	Entry Efficiency	Exit Efficiency	Total Efficiency	Commission (C)	High Price While Open	Low Price While Open	Note	Open Position Quantity	Close Position Quantity	Duration	Account
-  // [Sim]ESU3.CME(Sim1)	Short	2023-07 - 13  09: 51: 26.249 BP	2023-07 - 13  09: 54: 18.021 EP	4530.00	4532.00	2	2	2 - 4.00 - 4.00 - 4.00 F	1.00 - 4.00	1.00 - 4.00	100.0 % 0.0 % -80.0 % 0.00	4532.00	4529.50	SimpleOrderCommonStop.twconfig	2	0	00:02: 51	Sim1
-
   const records = [
     { Symbol: 'AAPL', 'Trade Type': 'Long', 'Entry DateTime': '2022-01-01 09:00:00 BP', 'Exit DateTime': '2022-01-01 10:00:00 EP', 'Entry Price': '100', 'Exit Price': '110', 'Trade Quantity': '100', 'Max Open Quantity': '100', 'Max Closed Quantity': '100', 'Profit/Loss (P)': '1000', 'Cumulative Profit/Loss (P)': '1000', 'FlatToFlat Profit/Loss (P)': '1000', 'FlatToFlat Max Open Profit (P)': '1000', 'FlatToFlat Max Open Loss (P)': '1000', 'Max Open Profit (P)': '1000', 'Max Open Loss (P)': '1000', 'Entry Efficiency': '100.0 %', 'Exit Efficiency': '0.0 %', 'Total Efficiency': '100.0 %', 'Commission (C)': '0.00', 'High Price While Open': '110', 'Low Price While Open': '100', Note: '', 'Open Position Quantity': '0', 'Close Position Quantity': '0', Duration: '00:00:00', Account: 'default' },
     { Symbol: 'AAPL', 'Trade Type': 'Long', 'Entry DateTime': '2022-01-01 10:00:00 BP', 'Exit DateTime': '2022-01-01 11:00:00 EP', 'Entry Price': '120', 'Exit Price': '130', 'Trade Quantity': '50', 'Max Open Quantity': '50', 'Max Closed Quantity': '50', 'Profit/Loss (P)': '500', 'Cumulative Profit/Loss (P)': '1500', 'FlatToFlat Profit/Loss (P)': '500', 'FlatToFlat Max Open Profit (P)': '500', 'FlatToFlat Max Open Loss (P)': '500', 'Max Open Profit (P)': '500', 'Max Open Loss (P)': '500', 'Entry Efficiency': '100.0 %', 'Exit Efficiency': '0.0 %', 'Total Efficiency': '100.0 %', 'Commission (C)': '0.00', 'High Price While Open': '130', 'Low Price While Open': '120', Note: '', 'Open Position Quantity': '0', 'Close Position Quantity': '0', Duration: '00:00:00', Account: 'default' },
@@ -83,7 +78,9 @@ test('consolidateTrades', (t) => {
 test('processTrades', async (t) => {
   const ORIGINAL_CONSOLE_LOG = console.log
   console.log = () => {}
-  t.after = () => console.log = ORIGINAL_CONSOLE_LOG
+  t.after = () => {
+    console.log = ORIGINAL_CONSOLE_LOG
+  }
 
   const filePath = new URL('../data/demo.tsv', import.meta.url)
   const absolutePath = fileURLToPath(filePath)

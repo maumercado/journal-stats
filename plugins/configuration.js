@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin'
 import Env from '@fastify/env'
 
-async function Config(app) {
+async function Config (app) {
   const schema = {
     type: 'object',
     required: [
@@ -32,6 +32,10 @@ async function Config(app) {
       JWT_SECRET: {
         type: 'string'
       },
+      PORT: {
+        type: 'number',
+        default: 3000
+      },
       NODE_ENV: {
         type: 'string',
         default: 'development'
@@ -40,7 +44,7 @@ async function Config(app) {
   }
 
   const configOptions = {
-    config: "config",
+    config: 'config',
     schema,
     removeAdditional: true
   }
