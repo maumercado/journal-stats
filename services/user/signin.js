@@ -37,7 +37,7 @@ export default fp(async (fastify) => {
     }
 
     // Check if user has a session
-    const { rows: [session] } = await fastify.userMethods.getUserSession(email)
+    const session = await fastify.userMethods.getUserSession(user)
     if (session) {
       return { token: session.token }
     }
@@ -45,7 +45,7 @@ export default fp(async (fastify) => {
     // Generate JWT token
     const { password: _, ...userWithoutPassword } = user
     const token = await fastify.userMethods.createToken(userWithoutPassword)
-    await fastify.userMethods.createUserSession(user.id, token)
+    await fastify.userMethods.createUserSession(userWithoutPassword, token)
 
     // Return token
     reply.send({ token })

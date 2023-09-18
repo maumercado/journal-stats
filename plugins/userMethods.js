@@ -108,12 +108,12 @@ async function userMethods (fastify) {
     }
   }
 
-  const createUserSession = async function (userId, token) {
+  const createUserSession = async function (user, token) {
     const client = await fastify.pg.connect()
     try {
       const expirationTime = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
-      const createUserSessionQuery = 'INSERT INTO sessions (profile_id, token, expires_at) VALUES ($1, $2, $3) RETURNING *'
-      const { rows } = await fastify.pg.query(createUserSessionQuery, [userId, token, expirationTime.toISOString()])
+      const createUserSessionQuery = 'INSERT INTO sessions (profile_id, email, token, expires_at) VALUES ($1, $2, $3, $4) RETURNING *'
+      const { rows } = await fastify.pg.query(createUserSessionQuery, [user.id, user.email, token, expirationTime.toISOString()])
       return { session: rows[0] }
     } catch (err) {
       fastify.log.error(err, 'Error creating user session.')
@@ -124,12 +124,12 @@ async function userMethods (fastify) {
 
   }
 
-  const getUserSession = async function (email) {
+  const getUserSession = async function (user) {
     const client = await fastify.pg.connect()
-    const getUserSessionQuery = 'SELECT * FROM sessions WHERE email=$1 AND expires_at > NOW()'
+    const getUserSessionQuery = 'SELECT * FROM sessions WHERE profile_id=$1 AND email=$2 AND expires_at > NOW()'
     try {
-      const { rows } = await fastify.pg.query(getUserSessionQuery, [email])
-      return { session: rows[0] }
+      const { rows } = await fastify.pg.query(getUserSessionQuery, [user.id, user.email])
+      return rows.length > 0 ? rows[0] : null
     } catch (err) {
       fastify.log.error(err, 'Error getting user session.')
       throw err

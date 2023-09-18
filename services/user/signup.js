@@ -31,7 +31,7 @@ export default async function userSignup (fastify) {
     // If email doesn't exist, create a new user
     try {
       const { token, user } = await fastify.userMethods.createUser(email, firstName, lastName, password)
-      await fastify.userMethods.createUserSession(user.id, token)
+      await fastify.userMethods.createUserSession(user, token)
 
       return reply
         .code(201)
