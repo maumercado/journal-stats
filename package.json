@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "start": "node index.js",
     "test": "tap -r classic ./**/*.test.js",
     "lint": "standard | snazzy",
     "lint:fix": "standard --fix"
@@ -16,6 +17,7 @@
     "@fastify/autoload": "^5.7.1",
     "@fastify/env": "^4.2.0",
     "@fastify/jwt": "^7.2.0",
+    "@fastify/multipart": "^7.7.3",
     "@fastify/postgres": "^5.2.0",
     "@fastify/sensible": "^5.2.0",
     "@maumercado/fastify-vault-secrets": "^1.0.0",
@@ -23,6 +25,7 @@
     "csv-parse": "^5.4.0",
     "fastify": "^4.21.0",
     "fastify-plugin": "^4.5.1",
+    "filenamify": "^6.0.0",
     "pg": "^8.11.3",
     "postgrator-cli": "^7.0.0"
   },

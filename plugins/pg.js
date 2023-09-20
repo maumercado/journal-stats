@@ -1,7 +1,7 @@
 import pg from '@fastify/postgres'
 import fp from 'fastify-plugin'
 
-async function pgConfig(app) {
+async function pgConfig (app) {
   const {
     PGDATABASE: database,
     PGPORT: port,
