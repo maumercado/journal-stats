@@ -9,3 +9,4 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS sessions_profile_id_index ON sessions (profile_id);
 CREATE INDEX IF NOT EXISTS sessions_token_index ON sessions (token);
+CREATE INDEX IF NOT EXISTS sessions_expires_at_index ON sessions (expires_at);

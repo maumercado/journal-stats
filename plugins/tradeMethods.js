@@ -179,7 +179,8 @@ async function tradesPlugin (fastify) {
       // Process trades
       const consolidatedTrades = await processTrades(filePath)
       // Insert trades into the database
-      return createMultipleTrades(consolidatedTrades, user)
+      await createMultipleTrades(consolidatedTrades, user)
+      return consolidatedTrades
     } catch (error) {
       fastify.log.error(error, 'Error processing trades')
       throw error
@@ -257,13 +258,49 @@ async function tradesPlugin (fastify) {
     }
   }
 
+
+  const returnParsedTrades = (trades) => {
+    return trades.map((trade) => {
+      const { entrydatetime: entryDateTime, exitdatetime: exitDateTime, steps, created_at, updated_at, ...rest } = trade
+      return {
+        ...rest,
+        createdAt: new Date(created_at).toISOString(),
+        updatedAt: new Date(updated_at).toISOString(),
+        entryDateTime: entryDateTime.toISOString(),
+        exitDateTime: exitDateTime ? exitDateTime.toISOString() : null,
+        steps: steps.map((step) => {
+          const { dateTime, ...rest } = step
+          return {
+            ...rest,
+            dateTime: new Date(dateTime).toISOString()
+          }
+        })
+      }
+    })
+  }
+
   const getTradesforUser = async (user) => {
     // Get trades for user
     const client = await fastify.pg.connect()
     try {
       const getTradesQuery = `SELECT * FROM trades WHERE profile_id=$1 ORDER BY entryDateTime DESC`
-      const result = await fastify.pg.query(getTradesQuery, [user.id])
-      return result.rows
+      const { rows } = await fastify.pg.query(getTradesQuery, [user.id])
+      return returnParsedTrades(rows)
+    } catch (err) {
+      fastify.log.error(err, 'Error getting trades in getTrades')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
+  const getTradesById = async (user, id) => {
+    // Get trades for user
+    const client = await fastify.pg.connect()
+    try {
+      const getTradesQuery = `SELECT * FROM trades WHERE profile_id=$1 AND id=$2`
+      const { rows } = await fastify.pg.query(getTradesQuery, [user.id, id])
+      return returnParsedTrades(rows)
     } catch (err) {
       fastify.log.error(err, 'Error getting trades in getTrades')
       throw err
@@ -278,6 +315,7 @@ async function tradesPlugin (fastify) {
     createMultipleTrades,
     deleteTradesById,
     getTradesByEntryDateTime,
+    getTradesById,
     getTradesforUser,
     processAndInsertTrades,
   }

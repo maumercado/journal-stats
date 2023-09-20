@@ -17,7 +17,7 @@ export default fp(async (fastify) => {
       if (!exists) await mkdir(location, { recursive: true })
       await pipeline(data.file, fs.createWriteStream(filePath))
       const trades = await fastify.tradeMethods.processAndInsertTrades(filePath, request.user)
-      reply.send(trades)
+      reply.status(200).send({ message: "Trades imported successfully", total: trades.length })
     } catch (error) {
       reply.status(401).send({ error: error.message })
     }
@@ -28,4 +28,19 @@ export default fp(async (fastify) => {
     const trades = await fastify.tradeMethods.getTradesforUser(request.user)
     reply.send(trades)
   })
+
+  fastify.get('/trades/:id', { onRequest: [ fastify.authenticate ] }, async (request, reply) => {
+    if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
+    const { id } = request.params
+    const trades = await fastify.tradeMethods.getTradesById(id)
+    if (trades.length === 0) return reply.code(404).send({ error: 'Not found' })
+    return reply.send({trade: trades[0]})
+  })
+
+  // fastify.get('/trades/pnlStats', { onRequest: [ fastify.authenticate ] }, async (request, reply) => {
+  //   if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
+  //   const pnlStats = await fastify.tradeMethods.getPnlStatsforUser(request.user)
+  //   reply.send({ pnlStats: pnlStats })
+  // })
+
 })
