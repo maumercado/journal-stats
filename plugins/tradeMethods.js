@@ -1,6 +1,12 @@
+import assert from 'assert'
 import fp from 'fastify-plugin'
 import fs from 'node:fs'
 import { parse } from 'csv-parse'
+
+const PNL_SUMMARY_GROUPS = ['day', 'week', 'month', 'year']
+const TOTAL_PNL_VIEW = 'pnl_summary'
+const TOTAL_PNL_VIEW_BY_TYPE = 'pnl_summary_by_trade_type'
+const PNL_WINDOWS = 'pnl_windows'
 
 async function tradesPlugin (fastify) {
   // Parsing functions
@@ -9,7 +15,7 @@ async function tradesPlugin (fastify) {
   const parseExitPrice = (row) => parseFloat(row['Exit Price'])
   const parseMaxOpenQuantity = (row) => parseInt(row['Max Open Quantity'], 10)
   const parseMaxClosedQuantity = (row) => parseInt(row['Max Closed Quantity'], 10)
-  const pnl = (row) => parseFloat(row['Profit/Loss (P)'])
+  const pnl = (row) => parseFloat(row['Profit/Loss (P)']) || null
   const parseTime = (dateTime) => new Date(dateTime.replace('  ', 'T').replace(/ EP|BP/, '').trim())
 
   // returns time difference in seconds
@@ -186,40 +192,40 @@ async function tradesPlugin (fastify) {
     }
   }
 
-  const calculatePnlWindows = (trades) => {
-    const windows = []
-    for (const trade of trades) {
-      const { entryDateTime, pnl } = trade
-      const entryHour = entryDateTime.getHours()
-      const entryMinute = entryDateTime.getMinutes()
-      const windowIndex = Math.floor((entryHour - 9) * 2 + entryMinute / 30)
-      if (windowIndex >= 0 && windowIndex <= 29) {
-        if (!windows[windowIndex]) {
-          windows[windowIndex] = []
-        }
-        windows[windowIndex].push({ pnl })
-      }
-    }
-    const results = []
-    const letter = 'A'.charCodeAt(0)
-    for (let i = 0; i < 30; i++) {
-      const window = windows[i] || []
-      const pnl = window.reduce((acc, trade) => acc + trade.pnl, 0)
-      const hour = Math.floor(i / 2) + 9
-      const minute = (i % 2) * 30
-      if (hour >= 9 && hour < 16 && pnl !== 0) {
-        const letterIndex = i - 1
-        const periodLetter = letterIndex >= 0 && letterIndex < 13 ? String.fromCharCode(letter + letterIndex) : ''
-        if (hour === 9 && minute < 30) {
-          results.push({ hour, minute, pnl, periodLetter: '' })
-        } else {
-          results.push({ hour, minute, pnl, periodLetter })
-        }
-      }
-    }
-    results.sort((a, b) => b.pnl - a.pnl)
-    return results
-  }
+  // const calculatePnlWindows = (trades) => {
+  //   const windows = []
+  //   for (const trade of trades) {
+  //     const { entryDateTime, pnl } = trade
+  //     const entryHour = entryDateTime.getHours()
+  //     const entryMinute = entryDateTime.getMinutes()
+  //     const windowIndex = Math.floor((entryHour - 9) * 2 + entryMinute / 30)
+  //     if (windowIndex >= 0 && windowIndex <= 29) {
+  //       if (!windows[windowIndex]) {
+  //         windows[windowIndex] = []
+  //       }
+  //       windows[windowIndex].push({ pnl })
+  //     }
+  //   }
+  //   const results = []
+  //   const letter = 'A'.charCodeAt(0)
+  //   for (let i = 0; i < 30; i++) {
+  //     const window = windows[i] || []
+  //     const pnl = window.reduce((acc, trade) => acc + trade.pnl, 0)
+  //     const hour = Math.floor(i / 2) + 9
+  //     const minute = (i % 2) * 30
+  //     if (hour >= 9 && hour < 16 && pnl !== 0) {
+  //       const letterIndex = i - 1
+  //       const periodLetter = letterIndex >= 0 && letterIndex < 13 ? String.fromCharCode(letter + letterIndex) : ''
+  //       if (hour === 9 && minute < 30) {
+  //         results.push({ hour, minute, pnl, periodLetter: '' })
+  //       } else {
+  //         results.push({ hour, minute, pnl, periodLetter })
+  //       }
+  //     }
+  //   }
+  //   results.sort((a, b) => b.pnl - a.pnl)
+  //   return results
+  // }
 
   const deleteTradesById = async (user, tradeIds) => {
     // Delete trades for user
@@ -285,7 +291,39 @@ async function tradesPlugin (fastify) {
       const { rows } = await fastify.pg.query(getTradesQuery, [user.id])
       return returnParsedTrades(rows)
     } catch (err) {
-      fastify.log.error(err, 'Error getting trades in getTrades')
+      fastify.log.error(err, 'Error getting trades in getTradesforUser')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
+  const viewChooser = (group) => {
+    switch (group) {
+      case 'day':
+        return 'daily_pnl_summary'
+      case 'week':
+        return 'weekly_pnl_summary'
+      case 'month':
+        return 'monthly_pnl_summary'
+      case 'year':
+        return 'yearly_pnl_summary'
+      default:
+        return 'daily_pnl_summary'
+    }
+  }
+
+  const getUserPnlStats = async (user, group = 'day') => {
+    // Get trades for user
+    assert(PNL_SUMMARY_GROUPS, 'Invalid group')
+    const client = await fastify.pg.connect()
+    try {
+      const viewName = viewChooser(group); // Replace with the name of your view
+      const getPnlSummaryQ = `SELECT ${group}, total_pnl FROM ${viewName} WHERE profile_id = $1 GROUP BY ${group}, total_pnl ORDER BY ${group} DESC`
+      const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
+      return rows
+    } catch (err) {
+      fastify.log.error(err, 'Error getting trades in getUserPnlStats')
       throw err
     } finally {
       client.release()
@@ -300,7 +338,58 @@ async function tradesPlugin (fastify) {
       const { rows } = await fastify.pg.query(getTradesQuery, [user.id, id])
       return returnParsedTrades(rows)
     } catch (err) {
-      fastify.log.error(err, 'Error getting trades in getTrades')
+      fastify.log.error(err, 'Error getting trades in getTradesById')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
+  const getUserTotalPnl = async (user) => {
+    // Get trades for user
+
+    const client = await fastify.pg.connect()
+    try {
+      const viewName = TOTAL_PNL_VIEW;
+      const getPnlSummaryQ = `SELECT SUM(total_pnl) FROM ${viewName} WHERE profile_id = $1`
+      const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
+      return rows
+    } catch (err) {
+      fastify.log.error(err, 'Error getting trades in getUserTotalPnl')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
+  const getUserTotalPnlByType = async (user) => {
+    // Get trades for user
+    // TODO: set toIsoString for each date
+    const client = await fastify.pg.connect()
+    try {
+      const viewName = TOTAL_PNL_VIEW_BY_TYPE;
+      const getPnlSummaryQ = `SELECT SUM(total_pnl) FROM ${viewName} WHERE profile_id = $1`
+      const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
+      return rows
+    } catch (err) {
+      fastify.log.error(err, 'Error getting trades in getUserTotalPnlByType')
+      throw err
+    } finally {
+      client.release()
+    }
+  }
+
+  const getUserPnlWindows = async (user) => {
+    // Get trades for user
+    // TODO: set toIsoString for each date
+    const client = await fastify.pg.connect()
+    try {
+      const viewName = PNL_WINDOWS;
+      const getPnlSummaryQ = `SELECT * FROM ${viewName} WHERE profile_id = $1`
+      const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
+      return rows
+    } catch (err) {
+      fastify.log.error(err, 'Error getting trades in calculatePnlWindows')
       throw err
     } finally {
       client.release()
@@ -308,14 +397,17 @@ async function tradesPlugin (fastify) {
   }
 
   const tradeMethods = {
-    calculatePnlWindows,
     createTrade,
     createMultipleTrades,
     deleteTradesById,
     getTradesByEntryDateTime,
     getTradesById,
     getTradesforUser,
-    processAndInsertTrades
+    getUserPnlStats,
+    processAndInsertTrades,
+    getUserTotalPnl,
+    getUserTotalPnlByType,
+    getUserPnlWindows
   }
 
   fastify.decorate('tradeMethods', tradeMethods)

@@ -37,9 +37,30 @@ export default fp(async (fastify) => {
     return reply.send({ trade: trades[0] })
   })
 
-  // fastify.get('/trades/pnlStats', { onRequest: [ fastify.authenticate ] }, async (request, reply) => {
-  //   if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
-  //   const pnlStats = await fastify.tradeMethods.getPnlStatsforUser(request.user)
-  //   reply.send({ pnlStats: pnlStats })
-  // })
+  fastify.get('/trades/pnl/stats', { onRequest: [ fastify.authenticate ] }, async (request, reply) => {
+    if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
+    const pnlStats = await fastify.tradeMethods.getUserPnlStats(request.user, request.query.group)
+    reply.send({ pnlStats: pnlStats })
+  })
+
+  fastify.get('/trades/pnl/byType', { onRequest: [ fastify.authenticate ] }, async (request, reply) => {
+    if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
+    const { id } = request.params
+    const pnlStats = await fastify.tradeMethods.getUserTotalPnlByType(request.user, id)
+    reply.send({ pnlStats: pnlStats })
+  })
+
+  fastify.get('/trades/pnl/total', { onRequest: [fastify.authenticate] }, async (request, reply) => {
+    if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
+    const { id } = request.params
+    const pnlStats = await fastify.tradeMethods.getUserTotalPnl(request.user, id)
+    reply.send({ pnlStats: pnlStats })
+  })
+
+  fastify.get('/trades/pnl/windows', { onRequest: [fastify.authenticate] }, async (request, reply) => {
+    if (!request.user) reply.code(401).send({ error: 'Unauthorized' })
+    const { id } = request.params
+    const pnlStats = await fastify.tradeMethods.getUserPnlWindows(request.user, id)
+    reply.send({ pnlStats: pnlStats })
+  })
 })
