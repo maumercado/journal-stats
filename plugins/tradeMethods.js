@@ -6,7 +6,7 @@ import { parse } from 'csv-parse'
 const PNL_SUMMARY_GROUPS = ['day', 'week', 'month', 'year']
 const TOTAL_PNL_VIEW = 'pnl_summary'
 const TOTAL_PNL_VIEW_BY_TYPE = 'pnl_summary_by_trade_type'
-const PNL_WINDOWS = 'pnl_windows'
+const PNL_WINDOWS = 'pnl_windows_profile'
 
 async function tradesPlugin (fastify) {
   // Parsing functions
@@ -263,20 +263,25 @@ async function tradesPlugin (fastify) {
     }
   }
 
+  const parseTradeTime = (date) => {
+    return new Date(date).toString()
+  }
+
   const returnParsedTrades = (trades) => {
     return trades.map((trade) => {
-      const { entrydatetime: entryDateTime, exitdatetime: exitDateTime, steps, created_at, updated_at, ...rest } = trade
+      const { entrydatetime: entryDateTime, exitdatetime: exitDateTime, steps, created_at, updated_at, profile_id, ...rest } = trade
       return {
         ...rest,
-        createdAt: new Date(created_at).toISOString(),
-        updatedAt: new Date(updated_at).toISOString(),
-        entryDateTime: entryDateTime.toISOString(),
-        exitDateTime: exitDateTime ? exitDateTime.toISOString() : null,
+        profileId: profile_id,
+        createdAt: parseTradeTime(created_at),
+        updatedAt: parseTradeTime(updated_at),
+        entryDateTime: parseTradeTime(entryDateTime),
+        exitDateTime: exitDateTime ? parseTradeTime(exitDateTime) : null,
         steps: steps.map((step) => {
           const { dateTime, ...rest } = step
           return {
             ...rest,
-            dateTime: new Date(dateTime).toISOString()
+            dateTime: new Date(dateTime)
           }
         })
       }
@@ -347,7 +352,6 @@ async function tradesPlugin (fastify) {
 
   const getUserTotalPnl = async (user) => {
     // Get trades for user
-
     const client = await fastify.pg.connect()
     try {
       const viewName = TOTAL_PNL_VIEW;
@@ -381,15 +385,24 @@ async function tradesPlugin (fastify) {
 
   const getUserPnlWindows = async (user) => {
     // Get trades for user
-    // TODO: set toIsoString for each date
     const client = await fastify.pg.connect()
     try {
-      const viewName = PNL_WINDOWS;
-      const getPnlSummaryQ = `SELECT * FROM ${viewName} WHERE profile_id = $1`
+      const getPnlSummaryQ = `
+        SELECT
+          *
+        FROM ${PNL_WINDOWS}
+        WHERE profile_id = $1
+        ORDER BY pnl DESC
+    `
       const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
-      return rows
+      return rows.map(row => ({
+        profileId: row.profile_id,
+        windowLetter: row.window_letter,
+        pnl: row.pnl
+      }))
+
     } catch (err) {
-      fastify.log.error(err, 'Error getting trades in calculatePnlWindows')
+      fastify.log.error(err, 'Error getting pnl windows in getUserPnlWindows')
       throw err
     } finally {
       client.release()
