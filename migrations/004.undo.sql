@@ -1,1 +1,1 @@
-DROP VIEW pnl_windows;
+DROP VIEW pnl_windows_profile;
