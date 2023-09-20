@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import { parse } from 'csv-parse'
 
 async function tradesPlugin (fastify) {
-
   // Parsing functions
   const parseTradeQuantity = (row) => parseInt(row['Trade Quantity'], 10)
   const parseEntryPrice = (row) => parseFloat(row['Entry Price'])
@@ -258,7 +257,6 @@ async function tradesPlugin (fastify) {
     }
   }
 
-
   const returnParsedTrades = (trades) => {
     return trades.map((trade) => {
       const { entrydatetime: entryDateTime, exitdatetime: exitDateTime, steps, created_at, updated_at, ...rest } = trade
@@ -283,7 +281,7 @@ async function tradesPlugin (fastify) {
     // Get trades for user
     const client = await fastify.pg.connect()
     try {
-      const getTradesQuery = `SELECT * FROM trades WHERE profile_id=$1 ORDER BY entryDateTime DESC`
+      const getTradesQuery = 'SELECT * FROM trades WHERE profile_id=$1 ORDER BY entryDateTime DESC'
       const { rows } = await fastify.pg.query(getTradesQuery, [user.id])
       return returnParsedTrades(rows)
     } catch (err) {
@@ -298,7 +296,7 @@ async function tradesPlugin (fastify) {
     // Get trades for user
     const client = await fastify.pg.connect()
     try {
-      const getTradesQuery = `SELECT * FROM trades WHERE profile_id=$1 AND id=$2`
+      const getTradesQuery = 'SELECT * FROM trades WHERE profile_id=$1 AND id=$2'
       const { rows } = await fastify.pg.query(getTradesQuery, [user.id, id])
       return returnParsedTrades(rows)
     } catch (err) {
@@ -317,7 +315,7 @@ async function tradesPlugin (fastify) {
     getTradesByEntryDateTime,
     getTradesById,
     getTradesforUser,
-    processAndInsertTrades,
+    processAndInsertTrades
   }
 
   fastify.decorate('tradeMethods', tradeMethods)

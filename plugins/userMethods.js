@@ -121,7 +121,6 @@ async function userMethods (fastify) {
     } finally {
       client.release()
     }
-
   }
 
   const getUserSession = async function (user) {
