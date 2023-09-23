@@ -269,12 +269,19 @@ async function tradesPlugin (fastify) {
 
   const returnParsedTrades = (trades) => {
     return trades.map((trade) => {
-      const { entrydatetime: entryDateTime, exitdatetime: exitDateTime, steps, created_at, updated_at, profile_id, ...rest } = trade
+      const {
+        entrydatetime: entryDateTime,
+        exitdatetime: exitDateTime,
+        steps, created_at: createdAt,
+        updated_at: updatedAt,
+        profile_id: profileId,
+        ...rest
+      } = trade
       return {
         ...rest,
-        profileId: profile_id,
-        createdAt: parseTradeTime(created_at),
-        updatedAt: parseTradeTime(updated_at),
+        profileId,
+        createdAt: parseTradeTime(createdAt),
+        updatedAt: parseTradeTime(updatedAt),
         entryDateTime: parseTradeTime(entryDateTime),
         exitDateTime: exitDateTime ? parseTradeTime(exitDateTime) : null,
         steps: steps.map((step) => {
@@ -323,7 +330,7 @@ async function tradesPlugin (fastify) {
     assert(PNL_SUMMARY_GROUPS, 'Invalid group')
     const client = await fastify.pg.connect()
     try {
-      const viewName = viewChooser(group); // Replace with the name of your view
+      const viewName = viewChooser(group) // Replace with the name of your view
       const getPnlSummaryQ = `SELECT ${group}, total_pnl FROM ${viewName} WHERE profile_id = $1 GROUP BY ${group}, total_pnl ORDER BY ${group} DESC`
       const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
       return rows
@@ -354,7 +361,7 @@ async function tradesPlugin (fastify) {
     // Get trades for user
     const client = await fastify.pg.connect()
     try {
-      const viewName = TOTAL_PNL_VIEW;
+      const viewName = TOTAL_PNL_VIEW
       const getPnlSummaryQ = `SELECT SUM(total_pnl) FROM ${viewName} WHERE profile_id = $1`
       const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
       return rows
@@ -371,7 +378,7 @@ async function tradesPlugin (fastify) {
     // TODO: set toIsoString for each date
     const client = await fastify.pg.connect()
     try {
-      const viewName = TOTAL_PNL_VIEW_BY_TYPE;
+      const viewName = TOTAL_PNL_VIEW_BY_TYPE
       const getPnlSummaryQ = `SELECT SUM(total_pnl) FROM ${viewName} WHERE profile_id = $1`
       const { rows } = await fastify.pg.query(getPnlSummaryQ, [user.id])
       return rows
@@ -400,7 +407,6 @@ async function tradesPlugin (fastify) {
         windowLetter: row.window_letter,
         pnl: row.pnl
       }))
-
     } catch (err) {
       fastify.log.error(err, 'Error getting pnl windows in getUserPnlWindows')
       throw err

@@ -36,24 +36,25 @@ export default fp(async (fastify) => {
         return
       }
 
+      const { password: _, ...userWithoutPassword } = user
+      const userResponse = { createdAt: user.created_at, firstName: user.firstname, lastName: user.lastname, email: user.email, userId: user.id }
       // Check if user has a session
       const session = await fastify.userMethods.getUserSession(user)
       if (session) {
-        return { token: session.token }
+        return { token: session.token, ...userResponse }
       }
 
       // Generate JWT token
-      const { password: _, ...userWithoutPassword } = user
       const token = await fastify.userMethods.createToken(userWithoutPassword)
       await fastify.userMethods.createUserSession(userWithoutPassword, token)
 
-      // Return token
-      reply.send({ token })
+      // Return token and user
+      return { ...userResponse, token }
     })
 
   fastify.delete('/signout', { onRequest: [fastify.authenticate] }, async (request, reply) => {
     // Delete session
-    await fastify.userMethods.deleteUserSession(token)
+    await fastify.userMethods.deleteUserSession(request.user.token)
 
     return reply.code(201)
   })
